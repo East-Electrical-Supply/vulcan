@@ -2,6 +2,7 @@ import { renderPDF } from "./puppeteer.ts";
 import { Buffer } from "node:buffer";
 import express, { Request, Response } from "express";
 import denoConfig from "../deno.json" with { type: "json" };
+import { logger } from "./logger.ts";
 
 /**
  * The URL on which the API will be hosted
@@ -40,9 +41,10 @@ app.use(express.json({ limit: '5mb' }));
 // Ensure storage directory exists
 try {
   await Deno.mkdir(STORAGE_DIR, { recursive: true });
+  logger.info("Storage directory ready", { storageDir: STORAGE_DIR });
 } catch (error) {
   if (!(error instanceof Deno.errors.AlreadyExists)) {
-    console.error("Failed to create storage directory:", error);
+    logger.error("Failed to create storage directory", { storageDir: STORAGE_DIR }, error instanceof Error ? error : new Error(String(error)));
     Deno.exit(1);
   }
 }
@@ -61,20 +63,33 @@ Router.get("/health", (_req: Request, res: Response) => {
 
 // Serve stored PDF files
 Router.get("/files/:filename", async (req: Request, res: Response) => {
+  const requestId = crypto.randomUUID();
+  const reqLogger = logger.createRequestLogger(requestId);
   const filename = req.params.filename;
   const filepath = `${STORAGE_DIR}/${filename}`;
+
+  reqLogger.info("Serving PDF file", { filename, operation: "serve_file" });
 
   try {
     const file = await Deno.readFile(filepath);
     res.contentType("application/pdf");
     res.send(Buffer.from(file));
-  } catch (_error) {
+    reqLogger.info("PDF file served successfully", { filename, fileSize: file.length });
+  } catch (error) {
+    reqLogger.warn("PDF file not found", { filename, filepath }, error instanceof Error ? error : new Error(String(error)));
     res.status(404).json({ error: "File not found" });
   }
 });
 
 Router.post("/pdf", async (req: Request, res: Response) => {
+  const requestId = crypto.randomUUID();
+  const reqLogger = logger.createRequestLogger(requestId);
+  const startTime = Date.now();
+
+  reqLogger.info("PDF generation request started", { operation: "generate_pdf" });
+
   if (!req.body?.html) {
+    reqLogger.warn("Missing HTML content in request");
     return res.status(400).json({ error: "HTML content is required" });
   }
   const { html: encodedHtml, options } = req.body as PDFRequest;
@@ -83,29 +98,35 @@ Router.post("/pdf", async (req: Request, res: Response) => {
   let html: string;
   try {
     html = atob(encodedHtml);
-    console.log(html);
+    reqLogger.debug("HTML decoded successfully", { htmlLength: html.length });
   } catch (error) {
     let message = "Error decoding HTML."
     if (error instanceof Error) message = error.message;
-    console.error(`ERROR-POST/pdf: ${message}`);
+    reqLogger.error("Failed to decode base64 HTML", { encodedLength: encodedHtml?.length }, error instanceof Error ? error : new Error(message));
     return res.status(400).json({ error: "Invalid base64 encoded HTML" });
   }
 
   const filename = `${crypto.randomUUID()}.pdf`;
   const shouldDownload = options?.download ?? true;
 
+  reqLogger.info("Starting PDF rendering", { filename, downloadMode: shouldDownload });
+
   try {
     const pdf = await renderPDF(
       html,
       filename,
       shouldDownload ? undefined : STORAGE_DIR,
+      requestId
     );
+
+    const duration = Date.now() - startTime;
 
     if (shouldDownload) {
       // Serve as download
       res.contentType("application/pdf");
       res.setHeader("Content-Disposition", `attachment; filename=${filename}`);
       res.send(Buffer.from(pdf));
+      reqLogger.info("PDF served as download", { filename, pdfSize: pdf.length, duration });
     } else {
       // Return download link
       const downloadUrl = `${STORAGE_BASE_URL}/${filename}`;
@@ -115,9 +136,11 @@ Router.post("/pdf", async (req: Request, res: Response) => {
         downloadUrl,
         message: "PDF generated and stored successfully",
       });
+      reqLogger.info("PDF generated and stored", { filename, downloadUrl, duration });
     }
   } catch (error) {
-    console.error("PDF generation error:", error);
+    const duration = Date.now() - startTime;
+    reqLogger.error("PDF generation failed", { filename, duration }, error instanceof Error ? error : new Error(String(error)));
     res.status(500).json({ error: "Failed to generate PDF" });
   }
 });
@@ -125,5 +148,11 @@ Router.post("/pdf", async (req: Request, res: Response) => {
 app.use(Router);
 
 app.listen(PORT, () => {
-  console.log(`${BASE_URL}:${PORT}`);
+  logger.info("Vulcan PDF service started", { 
+    baseUrl: BASE_URL, 
+    port: PORT, 
+    storageDir: STORAGE_DIR,
+    storageBaseUrl: STORAGE_BASE_URL,
+    version: denoConfig.version
+  });
 });
