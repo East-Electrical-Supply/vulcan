@@ -1,4 +1,5 @@
 {
+  "version": "0.1.0",
   "tasks": {
     "dev": "deno run -Ar --watch src/index.ts",
     "compile": "deno compile -Ar --output out/vulcan --include node_modules/ src/index.ts"

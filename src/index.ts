@@ -1,6 +1,7 @@
 import { renderPDF } from "./puppeteer.ts";
 import { Buffer } from "node:buffer";
 import express, { Request, Response } from "express";
+import denoConfig from "../deno.json" with { type: "json" };
 
 /**
  * The URL on which the API will be hosted
@@ -34,7 +35,7 @@ interface PDFRequest {
   options?: PDFRouteOptions;
 }
 
-app.use(express.json());
+app.use(express.json({ limit: '5mb' }));
 
 // Ensure storage directory exists
 try {
@@ -47,6 +48,16 @@ try {
 }
 
 const Router = express.Router();
+
+// Health check endpoint
+Router.get("/health", (_req: Request, res: Response) => {
+  res.json({
+    status: "healthy",
+    timestamp: new Date().toISOString(),
+    service: "vulcan-pdf-service",
+    version: denoConfig.version
+  });
+});
 
 // Serve stored PDF files
 Router.get("/files/:filename", async (req: Request, res: Response) => {
