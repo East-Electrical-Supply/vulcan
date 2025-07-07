@@ -1,0 +1,27 @@
+[Unit]
+Description=Vulcan PDF Engine API Service
+After=network.target
+
+[Service]
+Type=simple
+User=vulcan
+Group=vulcan
+WorkingDirectory=/etc/vulcan
+ExecStart=/usr/local/bin/vulcan
+Restart=always
+RestartSec=10
+Environment=BASE_URL"vulcan.eastelectricalsupply.com/api/v1"
+Environment=PORT=12998
+Environment=STORAGE_DIR=/etc/vulcan/pdfs
+Environment=STORAGE_BASE_URL="https://vulcan.eastelectricalsupply.com/pdfs"
+Environment=PUPPETEER_CACHE_DIR=/etc/vulcan/.cache
+
+# Hardening Directives
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/etc/vulcan
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,12 @@
+{
+  "tasks": {
+    "dev": "deno run -Ar --watch src/index.ts",
+    "compile": "deno compile -Ar --output out/vulcan --include node_modules/ src/index.ts"
+  },
+  "nodeModulesDir": "auto",
+  "imports": {
+    "@std/assert": "jsr:@std/assert@1",
+    "express": "npm:express@^5.1.0",
+    "puppeteer": "npm:puppeteer@^24.11.2"
+  }
+}
