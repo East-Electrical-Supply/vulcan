@@ -33,14 +33,16 @@ interface PDFRequest {
 
 app.use(express.json({ limit: '5mb' }));
 
-// Ensure storage directory exists
-try {
-  await Deno.mkdir(STORAGE_DIR, { recursive: true });
-  logger.info("Storage directory ready", { storageDir: STORAGE_DIR });
-} catch (error) {
-  if (!(error instanceof Deno.errors.AlreadyExists)) {
-    logger.error("Failed to create storage directory", { storageDir: STORAGE_DIR }, error instanceof Error ? error : new Error(String(error)));
-    Deno.exit(1);
+// Storage directory initialization function
+async function initializeStorage() {
+  try {
+    await Deno.mkdir(STORAGE_DIR, { recursive: true });
+    logger.info("Storage directory ready", { storageDir: STORAGE_DIR });
+  } catch (error) {
+    if (!(error instanceof Deno.errors.AlreadyExists)) {
+      logger.error("Failed to create storage directory", { storageDir: STORAGE_DIR }, error instanceof Error ? error : new Error(String(error)));
+      Deno.exit(1);
+    }
   }
 }
 
@@ -167,4 +169,4 @@ Router.post("/pdf", async (req: Request, res: Response) => {
 
 app.use(Router);
 
-export { app, STORAGE_DIR, STORAGE_BASE_URL };
+export { app, STORAGE_DIR, STORAGE_BASE_URL, initializeStorage };
