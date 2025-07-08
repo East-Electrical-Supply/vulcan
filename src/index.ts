@@ -2,6 +2,12 @@ import { app, STORAGE_DIR, STORAGE_BASE_URL } from "./app.ts";
 import denoConfig from "../deno.json" with { type: "json" };
 import { logger } from "./logger.ts";
 
+// Check for version flag
+if (Deno.args.includes("-v") || Deno.args.includes("--version")) {
+  console.log(denoConfig.version);
+  Deno.exit(0);
+}
+
 /**
  * The URL on which the API will be hosted
  */
