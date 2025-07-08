@@ -18,7 +18,7 @@ const STORAGE_DIR = Deno.env.get("STORAGE_DIR") || "/tmp/vulcan-pdfs";
  * Base URL for serving stored PDFs
  */
 const STORAGE_BASE_URL = Deno.env.get("STORAGE_BASE_URL") ||
-  `http://localhost:${PORT}/files`;
+  `http://localhost:${PORT}/pdfs`;
 
 const app = express();
 
@@ -59,7 +59,7 @@ Router.get("/health", (_req: Request, res: Response) => {
 });
 
 // Serve stored PDF files
-Router.get("/files/:filename", async (req: Request, res: Response) => {
+Router.get("/pdfs/:filename", async (req: Request, res: Response) => {
   const requestId = crypto.randomUUID();
   const reqLogger = logger.createRequestLogger(requestId);
   const filename = req.params.filename;
