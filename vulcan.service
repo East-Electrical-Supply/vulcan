@@ -10,7 +10,7 @@ WorkingDirectory=/etc/vulcan
 ExecStart=/usr/local/bin/vulcan
 Restart=always
 RestartSec=10
-Environment=BASE_URL"vulcan.eastelectricalsupply.com/api/v1"
+Environment=BASE_URL="vulcan.eastelectricalsupply.com/api/v1"
 Environment=PORT=12998
 Environment=STORAGE_DIR=/etc/vulcan/pdfs
 Environment=STORAGE_BASE_URL="https://vulcan.eastelectricalsupply.com/pdfs"
@@ -19,9 +19,39 @@ Environment=PUPPETEER_CACHE_DIR=/etc/vulcan/.cache
 # Hardening Directives
 NoNewPrivileges=true
 PrivateTmp=true
+PrivateUsers=true
 ProtectSystem=strict
 ProtectHome=true
+ProtectHostname=true
+UMask=0077
 ReadWritePaths=/etc/vulcan
+RestrictAddressFamilies=AF_INET AF_INET6
+CapabilityBoundingSet=~CAP_SYS_ADMIN CAP_NET_ADMIN CAP_SYS_CHROOT CAP_SYS_BOOT CAP_KILL CAP_SETUID CAP_SETGID CAP_SETPCAP CAP_CHOWN CAP_FSETID CAP_SETFCAP CAP_AUDIT_CONTROL CAP_AUDIT_READ CAP_AUDIT_WRITE CAP_NET_BIND_SERVICE CAP_NET_BROADCAST CAP_NET_RAW CAP_SYS_PACCT CAP_WAKE_ALARM CAP_BPF CAP_IPC_LOCK CAP_SYS_TIME CAP_SYS_PTRACE CAP_SYS_NICE CAP_SYS_RESOURCE CAP_MAC_ADMIN CAP_MAC_OVERRIDE CAP_BLOCK_SUSPEND CAP_SYS_TTY_CONFIG CAP_LINUX_IMMUTABLE CAP_DAC_OVERRIDE CAP_DAC_READ_SEARCH CAP_FOWNER CAP_IPC_OWNER
+LockPersonality=true
+SystemCallFilter=~@mount @reboot @module @cpu-emulation @obsolete @swap @debug
+
+RestrictNamespaces=~user mnt pid cgroup ipc net uts
+
+# Filesystem Security
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectKernelLogs=true
+ProtectControlGroups=true
+ProtectProc=invisible
+ProcSubset=pid
+PrivateDevices=true
+DevicePolicy=closed
+DeviceAllow=/dev/null rw
+DeviceAllow=/dev/zero rw
+DeviceAllow=/dev/full rw
+DeviceAllow=/dev/random r
+DeviceAllow=/dev/urandom r
+
+# Memory & Process Security
+MemoryDenyWriteExecute=false
+RestrictRealtime=true
+RestrictSUIDSGID=true
+RemoveIPC=true
 
 [Install]
 WantedBy=multi-user.target

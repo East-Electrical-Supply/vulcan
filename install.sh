@@ -34,6 +34,9 @@ chmod 755 "$DATA_DIR"
 chmod 755 "$DATA_DIR/.cache"
 chown -R vulcan:vulcan "$DATA_DIR"
 
+# Compile the binary
+deno task compile
+
 # Copy binary to PATH
 cp "out/$BINARY_NAME" "$INSTALL_DIR/$BINARY_NAME"
 chmod +x "$INSTALL_DIR/$BINARY_NAME"
