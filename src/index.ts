@@ -66,7 +66,32 @@ Router.get("/files/:filename", async (req: Request, res: Response) => {
   const requestId = crypto.randomUUID();
   const reqLogger = logger.createRequestLogger(requestId);
   const filename = req.params.filename;
+  
+  // Validate filename to prevent path traversal
+  if (!filename || 
+      filename.includes('..') || 
+      filename.includes('/') || 
+      filename.includes('\\') ||
+      !filename.match(/^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}\.pdf$/)) {
+    reqLogger.warn("Invalid filename rejected", { filename, operation: "serve_file" });
+    return res.status(400).json({ error: "Invalid filename" });
+  }
+
   const filepath = `${STORAGE_DIR}/${filename}`;
+  
+  // Additional security: ensure resolved path is within storage directory
+  try {
+    const resolvedPath = await Deno.realPath(filepath);
+    const resolvedStorageDir = await Deno.realPath(STORAGE_DIR);
+    if (!resolvedPath.startsWith(resolvedStorageDir)) {
+      reqLogger.warn("Path traversal attempt blocked", { filename, resolvedPath, operation: "serve_file" });
+      return res.status(403).json({ error: "Access denied" });
+    }
+  } catch (error) {
+    // File doesn't exist or path resolution failed
+    reqLogger.warn("Path resolution failed", { filename, filepath }, error instanceof Error ? error : new Error(String(error)));
+    return res.status(404).json({ error: "File not found" });
+  }
 
   reqLogger.info("Serving PDF file", { filename, operation: "serve_file" });
 
