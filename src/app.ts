@@ -116,10 +116,11 @@ Router.post("/pdf", async (req: Request, res: Response) => {
   }
   const { html: encodedHtml, options } = req.body as PDFRequest;
 
-  // Decode base64 HTML
+  // Decode base64 HTML with proper UTF-8 support
   let html: string;
   try {
-    html = atob(encodedHtml);
+    const buffer = Buffer.from(encodedHtml, 'base64');
+    html = buffer.toString('utf-8');
     reqLogger.debug("HTML decoded successfully", { htmlLength: html.length });
   } catch (error) {
     let message = "Error decoding HTML."

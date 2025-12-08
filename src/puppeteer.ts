@@ -39,11 +39,13 @@ export async function renderPDF(
   const page = await browser.newPage();
   await page.goto(`file://${tmpFilename}`);
   const pdf = await page.pdf({
+    format: "A4",
+    scale: 1.0,
     margin: {
-      top: "10mm",
-      bottom: "10mm",
-      left: "10mm",
-      right: "10mm",
+      top: "5mm",
+      bottom: "5mm",
+      left: "0mm",
+      right: "0mm",
     },
     printBackground: true,
   });
