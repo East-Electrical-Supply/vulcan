@@ -5,16 +5,21 @@ export interface LogContext {
   [key: string]: any;
 }
 
-export type LogLevel = 'debug' | 'info' | 'warn' | 'error';
+export type LogLevel = "debug" | "info" | "warn" | "error";
 
 class Logger {
-  private formatMessage(level: LogLevel, message: string, context?: LogContext, error?: Error): string {
+  private formatMessage(
+    level: LogLevel,
+    message: string,
+    context?: LogContext,
+    error?: Error,
+  ): string {
     const timestamp = new Date().toISOString();
     const logEntry: any = {
       timestamp,
       level: level.toUpperCase(),
       message,
-      service: 'vulcan'
+      service: "vulcan",
     };
 
     if (context) {
@@ -25,7 +30,7 @@ class Logger {
       logEntry.error = {
         message: error.message,
         stack: error.stack,
-        name: error.name
+        name: error.name,
       };
     }
 
@@ -33,31 +38,31 @@ class Logger {
   }
 
   debug(message: string, context?: LogContext): void {
-    console.log(this.formatMessage('debug', message, context));
+    console.log(this.formatMessage("debug", message, context));
   }
 
   info(message: string, context?: LogContext): void {
-    console.log(this.formatMessage('info', message, context));
+    console.log(this.formatMessage("info", message, context));
   }
 
   warn(message: string, context?: LogContext, error?: Error): void {
-    console.warn(this.formatMessage('warn', message, context, error));
+    console.warn(this.formatMessage("warn", message, context, error));
   }
 
   error(message: string, context?: LogContext, error?: Error): void {
-    console.error(this.formatMessage('error', message, context, error));
+    console.error(this.formatMessage("error", message, context, error));
   }
 
   createRequestLogger(requestId: string) {
     return {
-      debug: (message: string, context?: LogContext) => 
+      debug: (message: string, context?: LogContext) =>
         this.debug(message, { requestId, ...context }),
-      info: (message: string, context?: LogContext) => 
+      info: (message: string, context?: LogContext) =>
         this.info(message, { requestId, ...context }),
-      warn: (message: string, context?: LogContext, error?: Error) => 
+      warn: (message: string, context?: LogContext, error?: Error) =>
         this.warn(message, { requestId, ...context }, error),
-      error: (message: string, context?: LogContext, error?: Error) => 
-        this.error(message, { requestId, ...context }, error)
+      error: (message: string, context?: LogContext, error?: Error) =>
+        this.error(message, { requestId, ...context }, error),
     };
   }
 }

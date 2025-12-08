@@ -6,7 +6,12 @@ if (Deno.args.includes("-v") || Deno.args.includes("--version")) {
   Deno.exit(0);
 }
 
-import { app, STORAGE_BASE_URL, STORAGE_DIR, initializeStorage } from "./app.ts";
+import {
+  app,
+  initializeStorage,
+  STORAGE_BASE_URL,
+  STORAGE_DIR,
+} from "./app.ts";
 import { logger } from "./logger.ts";
 
 /**

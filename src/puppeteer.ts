@@ -14,16 +14,26 @@ export async function renderPDF(
     Deno.exit(-1);
   }
   const tmpFilename = `/tmp/${crypto.randomUUID()}.html`;
-  reqLogger.debug("Writing temporary HTML file", { tmpFilename, htmlLength: html.length });
-  
+  reqLogger.debug("Writing temporary HTML file", {
+    tmpFilename,
+    htmlLength: html.length,
+  });
+
   try {
     await Deno.writeTextFile(tmpFilename, html);
   } catch (err) {
-    reqLogger.error("Error writing temporary file", { tmpFilename }, err instanceof Error ? err : new Error(String(err)));
+    reqLogger.error(
+      "Error writing temporary file",
+      { tmpFilename },
+      err instanceof Error ? err : new Error(String(err)),
+    );
     Deno.exit(-1);
   }
-  reqLogger.info("Starting PDF generation", { operation: "render_pdf", tmpFilename });
-  
+  reqLogger.info("Starting PDF generation", {
+    operation: "render_pdf",
+    tmpFilename,
+  });
+
   const browser = await puppeteer.launch({
     args: [
       "--no-sandbox",
@@ -34,7 +44,7 @@ export async function renderPDF(
       "--disable-web-security",
       "--disable-blink-features=LayoutNGPrinting",
     ],
-    headless: 'shell'
+    headless: "shell",
   });
   const page = await browser.newPage();
   await page.goto(`file://${tmpFilename}`);
@@ -50,15 +60,22 @@ export async function renderPDF(
     printBackground: true,
   });
   await browser.close();
-  
+
   const renderDuration = Date.now() - startTime;
-  reqLogger.info("PDF generation completed", { pdfSize: pdf.length, duration: renderDuration });
+  reqLogger.info("PDF generation completed", {
+    pdfSize: pdf.length,
+    duration: renderDuration,
+  });
   // Clean up temporary HTML file
   try {
     await Deno.remove(tmpFilename);
     reqLogger.debug("Temporary HTML file cleaned up", { tmpFilename });
   } catch (err) {
-    reqLogger.warn("Failed to remove temporary file", { tmpFilename }, err instanceof Error ? err : new Error(String(err)));
+    reqLogger.warn(
+      "Failed to remove temporary file",
+      { tmpFilename },
+      err instanceof Error ? err : new Error(String(err)),
+    );
   }
   // If storageDir is provided, save the PDF to storage
   if (storageDir && filename) {
@@ -66,9 +83,16 @@ export async function renderPDF(
     reqLogger.info("Saving PDF to storage", { pdfPath, filename });
     try {
       await Deno.writeFile(pdfPath, pdf);
-      reqLogger.info("PDF saved to storage successfully", { pdfPath, pdfSize: pdf.length });
+      reqLogger.info("PDF saved to storage successfully", {
+        pdfPath,
+        pdfSize: pdf.length,
+      });
     } catch (err) {
-      reqLogger.error("Error saving PDF to storage", { pdfPath }, err instanceof Error ? err : new Error(String(err)));
+      reqLogger.error(
+        "Error saving PDF to storage",
+        { pdfPath },
+        err instanceof Error ? err : new Error(String(err)),
+      );
       throw err;
     }
   }

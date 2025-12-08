@@ -31,7 +31,7 @@ interface PDFRequest {
   options?: PDFRouteOptions;
 }
 
-app.use(express.json({ limit: '5mb' }));
+app.use(express.json({ limit: "5mb" }));
 
 // Storage directory initialization function
 async function initializeStorage() {
@@ -40,7 +40,9 @@ async function initializeStorage() {
     logger.info("Storage directory ready", { storageDir: STORAGE_DIR });
   } catch (error) {
     if (!(error instanceof Deno.errors.AlreadyExists)) {
-      logger.error("Failed to create storage directory", { storageDir: STORAGE_DIR }, error instanceof Error ? error : new Error(String(error)));
+      logger.error("Failed to create storage directory", {
+        storageDir: STORAGE_DIR,
+      }, error instanceof Error ? error : new Error(String(error)));
       Deno.exit(1);
     }
   }
@@ -54,7 +56,7 @@ Router.get("/health", (_req: Request, res: Response) => {
     status: "healthy",
     timestamp: new Date().toISOString(),
     service: "vulcan-pdf-service",
-    version: denoConfig.version
+    version: denoConfig.version,
   });
 });
 
@@ -63,30 +65,45 @@ Router.get("/pdfs/:filename", async (req: Request, res: Response) => {
   const requestId = crypto.randomUUID();
   const reqLogger = logger.createRequestLogger(requestId);
   const filename = req.params.filename;
-  
+
   // Validate filename to prevent path traversal
-  if (!filename || 
-      filename.includes('..') || 
-      filename.includes('/') || 
-      filename.includes('\\') ||
-      !filename.match(/^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}\.pdf$/)) {
-    reqLogger.warn("Invalid filename rejected", { filename, operation: "serve_file" });
+  if (
+    !filename ||
+    filename.includes("..") ||
+    filename.includes("/") ||
+    filename.includes("\\") ||
+    !filename.match(
+      /^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}\.pdf$/,
+    )
+  ) {
+    reqLogger.warn("Invalid filename rejected", {
+      filename,
+      operation: "serve_file",
+    });
     return res.status(400).json({ error: "Invalid filename" });
   }
 
   const filepath = `${STORAGE_DIR}/${filename}`;
-  
+
   // Additional security: ensure resolved path is within storage directory
   try {
     const resolvedPath = await Deno.realPath(filepath);
     const resolvedStorageDir = await Deno.realPath(STORAGE_DIR);
     if (!resolvedPath.startsWith(resolvedStorageDir)) {
-      reqLogger.warn("Path traversal attempt blocked", { filename, resolvedPath, operation: "serve_file" });
+      reqLogger.warn("Path traversal attempt blocked", {
+        filename,
+        resolvedPath,
+        operation: "serve_file",
+      });
       return res.status(403).json({ error: "Access denied" });
     }
   } catch (error) {
     // File doesn't exist or path resolution failed
-    reqLogger.warn("Path resolution failed", { filename, filepath }, error instanceof Error ? error : new Error(String(error)));
+    reqLogger.warn(
+      "Path resolution failed",
+      { filename, filepath },
+      error instanceof Error ? error : new Error(String(error)),
+    );
     return res.status(404).json({ error: "File not found" });
   }
 
@@ -96,9 +113,16 @@ Router.get("/pdfs/:filename", async (req: Request, res: Response) => {
     const file = await Deno.readFile(filepath);
     res.contentType("application/pdf");
     res.send(Buffer.from(file));
-    reqLogger.info("PDF file served successfully", { filename, fileSize: file.length });
+    reqLogger.info("PDF file served successfully", {
+      filename,
+      fileSize: file.length,
+    });
   } catch (error) {
-    reqLogger.warn("PDF file not found", { filename, filepath }, error instanceof Error ? error : new Error(String(error)));
+    reqLogger.warn(
+      "PDF file not found",
+      { filename, filepath },
+      error instanceof Error ? error : new Error(String(error)),
+    );
     res.status(404).json({ error: "File not found" });
   }
 });
@@ -108,7 +132,9 @@ Router.post("/pdf", async (req: Request, res: Response) => {
   const reqLogger = logger.createRequestLogger(requestId);
   const startTime = Date.now();
 
-  reqLogger.info("PDF generation request started", { operation: "generate_pdf" });
+  reqLogger.info("PDF generation request started", {
+    operation: "generate_pdf",
+  });
 
   if (!req.body?.html) {
     reqLogger.warn("Missing HTML content in request");
@@ -119,27 +145,32 @@ Router.post("/pdf", async (req: Request, res: Response) => {
   // Decode base64 HTML with proper UTF-8 support
   let html: string;
   try {
-    const buffer = Buffer.from(encodedHtml, 'base64');
-    html = buffer.toString('utf-8');
+    const buffer = Buffer.from(encodedHtml, "base64");
+    html = buffer.toString("utf-8");
     reqLogger.debug("HTML decoded successfully", { htmlLength: html.length });
   } catch (error) {
-    let message = "Error decoding HTML."
+    let message = "Error decoding HTML.";
     if (error instanceof Error) message = error.message;
-    reqLogger.error("Failed to decode base64 HTML", { encodedLength: encodedHtml?.length }, error instanceof Error ? error : new Error(message));
+    reqLogger.error("Failed to decode base64 HTML", {
+      encodedLength: encodedHtml?.length,
+    }, error instanceof Error ? error : new Error(message));
     return res.status(400).json({ error: "Invalid base64 encoded HTML" });
   }
 
   const filename = `${crypto.randomUUID()}.pdf`;
   const shouldDownload = options?.download ?? true;
 
-  reqLogger.info("Starting PDF rendering", { filename, downloadMode: shouldDownload });
+  reqLogger.info("Starting PDF rendering", {
+    filename,
+    downloadMode: shouldDownload,
+  });
 
   try {
     const pdf = await renderPDF(
       html,
       filename,
       shouldDownload ? undefined : STORAGE_DIR,
-      requestId
+      requestId,
     );
 
     const duration = Date.now() - startTime;
@@ -149,7 +180,11 @@ Router.post("/pdf", async (req: Request, res: Response) => {
       res.contentType("application/pdf");
       res.setHeader("Content-Disposition", `attachment; filename=${filename}`);
       res.send(Buffer.from(pdf));
-      reqLogger.info("PDF served as download", { filename, pdfSize: pdf.length, duration });
+      reqLogger.info("PDF served as download", {
+        filename,
+        pdfSize: pdf.length,
+        duration,
+      });
     } else {
       // Return download link
       const downloadUrl = `${STORAGE_BASE_URL}/${filename}`;
@@ -159,15 +194,23 @@ Router.post("/pdf", async (req: Request, res: Response) => {
         downloadUrl,
         message: "PDF generated and stored successfully",
       });
-      reqLogger.info("PDF generated and stored", { filename, downloadUrl, duration });
+      reqLogger.info("PDF generated and stored", {
+        filename,
+        downloadUrl,
+        duration,
+      });
     }
   } catch (error) {
     const duration = Date.now() - startTime;
-    reqLogger.error("PDF generation failed", { filename, duration }, error instanceof Error ? error : new Error(String(error)));
+    reqLogger.error(
+      "PDF generation failed",
+      { filename, duration },
+      error instanceof Error ? error : new Error(String(error)),
+    );
     res.status(500).json({ error: "Failed to generate PDF" });
   }
 });
 
 app.use(Router);
 
-export { app, STORAGE_DIR, STORAGE_BASE_URL, initializeStorage };
+export { app, initializeStorage, STORAGE_BASE_URL, STORAGE_DIR };
