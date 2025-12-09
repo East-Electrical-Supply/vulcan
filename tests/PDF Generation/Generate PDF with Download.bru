@@ -1,0 +1,40 @@
+meta {
+  name: Generate PDF with Download
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{baseUrl}}/pdf
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "html": "PCFET0NUWVBFIGh0bWw+CjxodG1sIGxhbmc9ImVuIj4KPGhlYWQ+CiAgPG1ldGEgY2hhcnNldD0iVVRGLTgiPgogIDxtZXRhIG5hbWU9InZpZXdwb3J0IiBjb250ZW50PSJ3aWR0aD1kZXZpY2Utd2lkdGgsIGluaXRpYWwtc2NhbGU9MS4wIj4KICA8dGl0bGU+VGVzdCBQREY8L3RpdGxlPgogIDxzdHlsZT4KICAgIGJvZHkgewogICAgICBmb250LWZhbWlseTogQXJpYWwsIHNhbnMtc2VyaWY7CiAgICAgIG1hcmdpbjogNDBweDsKICAgIH0KICAgIGgxIHsKICAgICAgY29sb3I6ICMzMzM7CiAgICB9CiAgICAudGVzdC1jb250ZW50IHsKICAgICAgYmFja2dyb3VuZC1jb2xvcjogI2Y5ZjlmOTsKICAgICAgcGFkZGluZzogMjBweDsKICAgICAgYm9yZGVyLXJhZGl1czogNXB4OwogICAgfQogIDwvc3R5bGU+CjwvaGVhZD4KPGJvZHk+CiAgPGgxPlRlc3QgUERGIERvY3VtZW50PC9oMT4KICA8ZGl2IGNsYXNzPSJ0ZXN0LWNvbnRlbnQiPgogICAgPHA+VGhpcyBpcyBhIHRlc3QgSFRNTCBkb2N1bWVudCB0aGF0IHdpbGwgYmUgY29udmVydGVkIHRvIFBERi48L3A+CiAgICA8cD5JdCBjb250YWlucyBzb21lIGJhc2ljIHN0eWxpbmcgYW5kIGNvbnRlbnQgZm9yIHRlc3RpbmcgcHVycG9zZXMuPC9wPgogIDwvZGl2Pgo8L2JvZHk+CjwvaHRtbD4=",
+    "options": {
+      "download": true
+    }
+  }
+}
+
+assert {
+  res.status: eq 200
+  res.headers["content-type"]: contains application/pdf
+  res.headers["content-disposition"]: contains attachment
+}
+
+tests {
+  test("Should return PDF with correct headers", function() {
+    expect(res.getStatus()).to.equal(200);
+    expect(res.getHeader("content-type")).to.contain("application/pdf");
+    expect(res.getHeader("content-disposition")).to.contain("attachment");
+    expect(res.getHeader("content-disposition")).to.contain("filename");
+  });
+
+  test("Should return PDF binary data", function() {
+    expect(res.getBody()).toBeDefined();
+    expect(res.getBody().length).toBeGreaterThan(0);
+  });
+}

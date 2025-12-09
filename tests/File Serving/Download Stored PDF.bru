@@ -1,0 +1,28 @@
+meta {
+  name: Download Stored PDF
+  type: http
+  seq: 3
+}
+
+get {
+  url: {{baseUrl}}/pdfs/{{storedFilename}}
+  body: none
+  auth: none
+}
+
+assert {
+  res.status: eq 200
+  res.headers["content-type"]: contains application/pdf
+}
+
+tests {
+  test("Should serve stored PDF file", function() {
+    expect(res.getStatus()).to.equal(200);
+    expect(res.getHeader("content-type")).to.contain("application/pdf");
+  });
+
+  test("Should return PDF binary data", function() {
+    expect(res.getBody()).toBeDefined();
+    expect(res.getBody().length).toBeGreaterThan(0);
+  });
+}

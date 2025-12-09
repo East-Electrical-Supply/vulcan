@@ -1,0 +1,35 @@
+meta {
+  name: Health Check
+  type: http
+  seq: 8
+}
+
+get {
+  url: {{baseUrl}}/health
+  body: none
+  auth: none
+}
+
+assert {
+  res.status: eq 200
+  res.body.status: eq "healthy"
+  res.body.service: eq "vulcan-pdf-service"
+  res.body.timestamp: isDefined
+  res.body.version: isDefined
+}
+
+tests {
+  test("Should return healthy status", function() {
+    expect(res.getStatus()).to.equal(200);
+    
+    const body = res.getBody();
+    expect(body.status).to.equal("healthy");
+    expect(body.service).to.equal("vulcan-pdf-service");
+    expect(body.timestamp).toBeDefined();
+    expect(body.version).toBeDefined();
+    
+    // Validate timestamp format (ISO string)
+    const timestamp = new Date(body.timestamp);
+    expect(timestamp.toISOString()).to.equal(body.timestamp);
+  });
+}

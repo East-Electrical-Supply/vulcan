@@ -1,0 +1,25 @@
+meta {
+  name: Invalid Filename Path Traversal
+  type: http
+  seq: 7
+}
+
+get {
+  url: {{baseUrl}}/pdfs/../../../etc/passwd
+  body: none
+  auth: none
+}
+
+assert {
+  res.status: eq 400
+  res.body.error: eq "Invalid filename"
+}
+
+tests {
+  test("Should prevent path traversal attacks", function() {
+    expect(res.getStatus()).to.equal(400);
+    
+    const body = res.getBody();
+    expect(body.error).to.equal("Invalid filename");
+  });
+}

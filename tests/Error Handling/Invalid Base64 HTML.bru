@@ -1,0 +1,31 @@
+meta {
+  name: Invalid Base64 HTML
+  type: http
+  seq: 6
+}
+
+post {
+  url: {{baseUrl}}/pdf
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "html": "invalid-base64-content!!!"
+  }
+}
+
+assert {
+  res.status: eq 400
+  res.body.error: eq "Invalid base64 encoded HTML"
+}
+
+tests {
+  test("Should return 400 for invalid base64", function() {
+    expect(res.getStatus()).to.equal(400);
+    
+    const body = res.getBody();
+    expect(body.error).to.equal("Invalid base64 encoded HTML");
+  });
+}

@@ -1,0 +1,25 @@
+meta {
+  name: Download Non-existent PDF
+  type: http
+  seq: 4
+}
+
+get {
+  url: {{baseUrl}}/pdfs/00000000-0000-0000-0000-000000000000.pdf
+  body: none
+  auth: none
+}
+
+assert {
+  res.status: eq 404
+  res.body.error: eq "File not found"
+}
+
+tests {
+  test("Should return 404 for non-existent file", function() {
+    expect(res.getStatus()).to.equal(404);
+    
+    const body = res.getBody();
+    expect(body.error).to.equal("File not found");
+  });
+}

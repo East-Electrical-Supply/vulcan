@@ -1,0 +1,29 @@
+meta {
+  name: Missing HTML Content
+  type: http
+  seq: 5
+}
+
+post {
+  url: {{baseUrl}}/pdf
+  body: json
+  auth: none
+}
+
+body:json {
+  {}
+}
+
+assert {
+  res.status: eq 400
+  res.body.error: eq "HTML content is required"
+}
+
+tests {
+  test("Should return 400 for missing HTML", function() {
+    expect(res.getStatus()).to.equal(400);
+    
+    const body = res.getBody();
+    expect(body.error).to.equal("HTML content is required");
+  });
+}
