@@ -1,0 +1,3 @@
+# Deno compiled binaries statically link various libraries by design
+# This is expected behavior for standalone Deno executables
+vulcan: embedded-library

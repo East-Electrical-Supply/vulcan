@@ -1,3 +1,17 @@
-node_modules/*
+node_modules/
 out/
 .envrc
+.cache/
+.chrome-cache/
+
+# Compiled binary
+vulcan
+
+# Debian build artifacts
+debian/vulcan/
+debian/.debhelper/
+debian/*.debhelper
+debian/*.debhelper.log
+debian/*.substvars
+debian/files
+debian/debhelper-build-stamp

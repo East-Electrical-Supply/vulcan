@@ -1,0 +1,37 @@
+#!/bin/bash
+set -e
+
+case "$1" in
+    purge)
+        # Remove vulcan user if it exists
+        if getent passwd vulcan > /dev/null 2>&1; then
+            userdel vulcan || true
+        fi
+
+        # Remove vulcan group if it exists
+        if getent group vulcan > /dev/null 2>&1; then
+            groupdel vulcan || true
+        fi
+
+        # Remove configuration and data directories on purge
+        if [ -d /etc/vulcan ]; then
+            rm -rf /etc/vulcan
+        fi
+
+        echo "Vulcan configuration, data, and user have been removed."
+        ;;
+
+    remove|upgrade|failed-upgrade|abort-install|abort-upgrade|disappear)
+        # On remove (not purge), keep the user and config directory
+        # debhelper will handle systemd unit cleanup
+        ;;
+
+    *)
+        echo "postrm called with unknown argument \`$1'" >&2
+        exit 1
+        ;;
+esac
+
+#DEBHELPER#
+
+exit 0

@@ -1,0 +1,42 @@
+#!/bin/bash
+set -e
+
+case "$1" in
+    configure)
+        # Create vulcan group if it doesn't exist
+        if ! getent group vulcan > /dev/null 2>&1; then
+            groupadd --system vulcan
+        fi
+
+        # Create vulcan user if it doesn't exist
+        if ! getent passwd vulcan > /dev/null 2>&1; then
+            useradd --system --gid vulcan --no-create-home --shell /bin/false vulcan
+        fi
+
+        # Set proper ownership for working directories
+        chown -R vulcan:vulcan /etc/vulcan
+        chmod 755 /etc/vulcan
+        chmod 755 /etc/vulcan/pdfs
+        chmod 755 /etc/vulcan/.cache
+
+        echo "Vulcan has been installed successfully."
+        echo "To start the service, run: systemctl start vulcan"
+        echo "To check status, run: systemctl status vulcan"
+        echo ""
+        echo "Configuration directory: /etc/vulcan"
+        echo "PDF storage directory:   /etc/vulcan/pdfs"
+        echo "Service runs as user:    vulcan"
+        ;;
+
+    abort-upgrade|abort-remove|abort-deconfigure)
+        ;;
+
+    *)
+        echo "postinst called with unknown argument \`$1'" >&2
+        exit 1
+        ;;
+esac
+
+#DEBHELPER#
+
+exit 0

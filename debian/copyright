@@ -1,0 +1,13 @@
+Format: https://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
+Upstream-Name: vulcan
+Upstream-Contact: John Carveth <johnc@eastelectricalsupply.com>
+Source: https://github.com/east-electrical-supply/east/vulcan
+
+Files: *
+Copyright: 2025 East Electrical Supply
+License: Proprietary
+ This software is proprietary and confidential. It is the property of
+ East Electrical Supply and is provided for internal use only.
+ .
+ Unauthorized copying, distribution, modification, or use of this software,
+ via any medium, is strictly prohibited.

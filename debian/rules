@@ -1,0 +1,37 @@
+#!/usr/bin/make -f
+
+%:
+	dh $@
+
+override_dh_auto_build:
+	deno compile -Ar --include node_modules/ --output vulcan src/index.ts
+	PUPPETEER_CACHE_DIR=.chrome-cache deno run -Ar npm:puppeteer browsers install chrome-headless-shell
+
+override_dh_auto_install:
+	# Create directories
+	install -d debian/vulcan/usr/bin
+	install -d debian/vulcan/etc/vulcan
+	install -d debian/vulcan/etc/vulcan/pdfs
+	# Install binary with proper permissions
+	install -m 755 vulcan debian/vulcan/usr/bin/vulcan
+	# Install Chrome headless shell cache
+	cp -r .chrome-cache debian/vulcan/etc/vulcan/.cache
+	# Systemd units are installed automatically by dh_installsystemd
+
+override_dh_auto_clean:
+	rm -rf .chrome-cache
+	if [ -f vulcan ] && ./vulcan --version >/dev/null 2>&1; then \
+		echo "Preserving working vulcan binary"; \
+	else \
+		rm -f vulcan; \
+	fi
+	dh_auto_clean
+
+override_dh_auto_test:
+	@echo "Skipping tests"
+
+override_dh_installsystemd:
+	dh_installsystemd --name=vulcan --restart-after-upgrade vulcan.service
+
+override_dh_strip:
+	# Skip stripping - it breaks Deno binaries
