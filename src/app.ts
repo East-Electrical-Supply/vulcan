@@ -1,8 +1,9 @@
-import { renderPDF } from "./puppeteer.ts";
+import { PDFRenderOptions, renderPDF } from "./puppeteer.ts";
 import { Buffer } from "node:buffer";
 import express, { Request, Response } from "express";
 import denoConfig from "../deno.json" with { type: "json" };
 import { logger } from "./logger.ts";
+import { docsRouter } from "./docs.ts";
 
 /**
  * The port the HTTP server will listen to
@@ -22,7 +23,7 @@ const STORAGE_BASE_URL = Deno.env.get("STORAGE_BASE_URL") ||
 
 const app = express();
 
-interface PDFRouteOptions {
+interface PDFRouteOptions extends PDFRenderOptions {
   download?: boolean; // if true (default), serve as download; if false, store and return link
 }
 
@@ -160,6 +161,31 @@ Router.post("/pdf", async (req: Request, res: Response) => {
   const filename = `${crypto.randomUUID()}.pdf`;
   const shouldDownload = options?.download ?? true;
 
+  // Validate scale if provided (Puppeteer requires 0.1 - 2).
+  if (
+    options?.scale !== undefined &&
+    (typeof options.scale !== "number" ||
+      options.scale < 0.1 ||
+      options.scale > 2)
+  ) {
+    reqLogger.warn("Invalid scale value rejected", { scale: options.scale });
+    return res.status(400).json({
+      error: "scale must be a number between 0.1 and 2",
+    });
+  }
+
+  // Pass through only the render-related options to the renderer.
+  const renderOptions: PDFRenderOptions = {
+    format: options?.format,
+    landscape: options?.landscape,
+    scale: options?.scale,
+    margin: options?.margin,
+    printBackground: options?.printBackground,
+    pageRanges: options?.pageRanges,
+    preferCSSPageSize: options?.preferCSSPageSize,
+    emulateScreenMedia: options?.emulateScreenMedia,
+  };
+
   reqLogger.info("Starting PDF rendering", {
     filename,
     downloadMode: shouldDownload,
@@ -171,6 +197,7 @@ Router.post("/pdf", async (req: Request, res: Response) => {
       filename,
       shouldDownload ? undefined : STORAGE_DIR,
       requestId,
+      renderOptions,
     );
 
     const duration = Date.now() - startTime;
@@ -211,6 +238,7 @@ Router.post("/pdf", async (req: Request, res: Response) => {
   }
 });
 
+app.use(docsRouter);
 app.use(Router);
 
 export { app, initializeStorage, STORAGE_BASE_URL, STORAGE_DIR };

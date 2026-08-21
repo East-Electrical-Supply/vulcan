@@ -1,0 +1,298 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Vulcan PDF Service",
+    "version": "0.2.0",
+    "description": "An HTTP API that accepts base64-encoded HTML and returns generated PDF files."
+  },
+  "servers": [
+    {
+      "url": "http://localhost:5739",
+      "description": "Local development server"
+    }
+  ],
+  "paths": {
+    "/health": {
+      "get": {
+        "summary": "Health check",
+        "description": "Returns the current health status of the service.",
+        "operationId": "getHealth",
+        "responses": {
+          "200": {
+            "description": "Service is healthy",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HealthResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/pdf": {
+      "post": {
+        "summary": "Generate a PDF",
+        "description": "Accepts base64-encoded HTML and returns a generated PDF. By default the PDF is returned as a file download. When `options.download` is false, the PDF is stored server-side and a download URL is returned instead.",
+        "operationId": "generatePDF",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PDFRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "PDF generated successfully. Response type depends on `options.download`.",
+            "content": {
+              "application/pdf": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary",
+                  "description": "PDF file binary (returned when `options.download` is true or omitted)"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PDFStoredResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request — missing or invalid HTML",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "examples": {
+                  "missingHtml": {
+                    "summary": "Missing HTML content",
+                    "value": { "error": "HTML content is required" }
+                  },
+                  "invalidBase64": {
+                    "summary": "Invalid base64 encoding",
+                    "value": { "error": "Invalid base64 encoded HTML" }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error during PDF generation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": { "error": "Failed to generate PDF" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/pdfs/{filename}": {
+      "get": {
+        "summary": "Download a stored PDF",
+        "description": "Serves a previously stored PDF file by its UUID-based filename.",
+        "operationId": "getStoredPDF",
+        "parameters": [
+          {
+            "name": "filename",
+            "in": "path",
+            "required": true,
+            "description": "UUID-based PDF filename (e.g. `550e8400-e29b-41d4-a716-446655440000.pdf`)",
+            "schema": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}\\.pdf$",
+              "example": "550e8400-e29b-41d4-a716-446655440000.pdf"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "PDF file",
+            "content": {
+              "application/pdf": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid filename format",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": { "error": "Invalid filename" }
+              }
+            }
+          },
+          "403": {
+            "description": "Access denied (path traversal attempt blocked)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": { "error": "Access denied" }
+              }
+            }
+          },
+          "404": {
+            "description": "File not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": { "error": "File not found" }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "PDFRequest": {
+        "type": "object",
+        "required": ["html"],
+        "properties": {
+          "html": {
+            "type": "string",
+            "description": "Base64-encoded HTML string to render as a PDF.",
+            "example": "PCFET0NUWVBFIGh0bWw+PGh0bWw+PGJvZHk+SGVsbG8gV29ybGQ8L2JvZHk+PC9odG1sPg=="
+          },
+          "options": {
+            "$ref": "#/components/schemas/PDFRouteOptions"
+          }
+        }
+      },
+      "PDFRouteOptions": {
+        "type": "object",
+        "properties": {
+          "download": {
+            "type": "boolean",
+            "default": true,
+            "description": "When true (default), the PDF is returned directly as a file download. When false, the PDF is stored server-side and a download URL is returned."
+          },
+          "format": {
+            "type": "string",
+            "default": "A4",
+            "description": "Paper format, e.g. \"A4\", \"Letter\", \"Legal\".",
+            "example": "Letter"
+          },
+          "landscape": {
+            "type": "boolean",
+            "default": false,
+            "description": "Render the page in landscape orientation."
+          },
+          "scale": {
+            "type": "number",
+            "default": 1.0,
+            "minimum": 0.1,
+            "maximum": 2,
+            "description": "Scale (zoom) of the webpage rendering. Must be between 0.1 and 2."
+          },
+          "margin": {
+            "type": "object",
+            "description": "Page margins as CSS length strings (e.g. \"10mm\", \"0.5in\"). Defaults to 5mm top/bottom and 0mm left/right.",
+            "properties": {
+              "top": { "type": "string", "example": "10mm" },
+              "bottom": { "type": "string", "example": "10mm" },
+              "left": { "type": "string", "example": "10mm" },
+              "right": { "type": "string", "example": "10mm" }
+            }
+          },
+          "printBackground": {
+            "type": "boolean",
+            "default": true,
+            "description": "Print background graphics and colours."
+          },
+          "pageRanges": {
+            "type": "string",
+            "description": "Paper ranges to print, e.g. \"1-5, 8\". Defaults to all pages.",
+            "example": "1-3"
+          },
+          "preferCSSPageSize": {
+            "type": "boolean",
+            "default": false,
+            "description": "Give any CSS `@page` size declared in the HTML priority over `format`."
+          },
+          "emulateScreenMedia": {
+            "type": "boolean",
+            "default": false,
+            "description": "Render using `screen` CSS media instead of `print`. Useful when the HTML has no dedicated print styles and should match the browser view."
+          }
+        }
+      },
+      "PDFStoredResponse": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "example": true
+          },
+          "filename": {
+            "type": "string",
+            "description": "UUID-based filename of the stored PDF.",
+            "example": "550e8400-e29b-41d4-a716-446655440000.pdf"
+          },
+          "downloadUrl": {
+            "type": "string",
+            "description": "URL to download the stored PDF.",
+            "example": "http://localhost:5739/pdfs/550e8400-e29b-41d4-a716-446655440000.pdf"
+          },
+          "message": {
+            "type": "string",
+            "example": "PDF generated and stored successfully"
+          }
+        }
+      },
+      "HealthResponse": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "example": "healthy"
+          },
+          "timestamp": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2026-03-23T12:00:00.000Z"
+          },
+          "service": {
+            "type": "string",
+            "example": "vulcan-pdf-service"
+          },
+          "version": {
+            "type": "string",
+            "example": "0.2.0"
+          }
+        }
+      },
+      "ErrorResponse": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "type": "string",
+            "description": "Human-readable error message."
+          }
+        }
+      }
+    }
+  }
+}
